@@ -51,13 +51,15 @@ function emptyReceipt(hash: Hex, status: RedemptionReceipt["status"], notes: str
  * calldata and the TroveManager Redemption event. Success requires all of them.
  */
 export function reconcileReceipt(
-  tx: Pick<Transaction, "hash" | "from" | "to" | "input" | "chainId">,
+  tx: Pick<Transaction, "hash" | "from" | "to" | "input" | "chainId"> & { gasPrice?: bigint },
   receipt: ReceiptSource,
   blockTimestamp: bigint | null,
   redeemer: Address | null = PEGPATH_REDEEMER,
 ): RedemptionReceipt {
   const notes: string[] = [];
   const tm = contracts.TroveManager.proxy;
+  // Mezo omits effectiveGasPrice on receipts of legacy (type 0) transactions; their gasPrice is what was paid.
+  const gasPrice = receipt.effectiveGasPrice ?? tx.gasPrice ?? null;
   const base: RedemptionReceipt = {
     ...emptyReceipt(tx.hash, "confirmed-unverified", notes),
     from: tx.from,
@@ -65,8 +67,8 @@ export function reconcileReceipt(
     blockNumber: receipt.blockNumber,
     blockTimestamp,
     gasUsed: receipt.gasUsed,
-    effectiveGasPrice: receipt.effectiveGasPrice,
-    gasCostBtcWei: receipt.gasUsed * receipt.effectiveGasPrice,
+    effectiveGasPrice: gasPrice,
+    gasCostBtcWei: gasPrice === null ? null : receipt.gasUsed * gasPrice,
   };
 
   if (tx.chainId !== undefined && tx.chainId !== MEZO_TESTNET_ID) {

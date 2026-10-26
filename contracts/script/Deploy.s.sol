@@ -5,7 +5,7 @@ import {Script, console2} from "forge-std/Script.sol";
 import {PegPathRedeemer, IERC20Permit, ITroveManager, IHintHelpers, IPriceFeed} from "../src/PegPathRedeemer.sol";
 
 /// Deploys PegPathRedeemer against the Mezo Testnet MUSD deployment (addresses match
-/// @mezo-org/musd-contracts deployments/matsnet).
+/// the musd-contracts npm package, deployments/matsnet).
 contract Deploy is Script {
     function run() external returns (PegPathRedeemer redeemer) {
         require(block.chainid == 31611, "Mezo Testnet only");

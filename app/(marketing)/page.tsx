@@ -279,7 +279,7 @@ export default function LandingPage() {
               On a fork of Mezo Testnet, a direct call with an off-chain hint reverted after a 0.01% price tick. The same
               redemption through PegPathRedeemer succeeded.
             </p>
-            <Source>contracts/test/PegPathRedeemer.fork.t.sol, 6 of 6 passing. Testnet deployment pending.</Source>
+            <Source>Deployed on Mezo Testnet at 0x126088EaE43E0c0d4c4AE5D6111d4B0223284164. Fork tests: 6 of 6 passing.</Source>
           </Panel>
         </div>
       </Section>

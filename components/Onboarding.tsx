@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { usePublicClient } from "wagmi";
 import { formatBtc, formatMusd } from "@/lib/amounts/units";
-import { MEZO_TESTNET_ID } from "@/lib/chain/mezoTestnet";
+import { explorerAddressUrl, MEZO_TESTNET_ID } from "@/lib/chain/mezoTestnet";
+import { PEGPATH_REDEEMER } from "@/lib/contracts/redeemer";
 import { readWalletSnapshot } from "@/lib/redemption/readPreflight";
 import { MEZO_FAUCET_URL, MEZO_TESTNET_APP_URL } from "@/lib/site";
 import { useMezoAccount } from "@/hooks/useMezoAccount";
@@ -146,7 +147,17 @@ export function Onboarding() {
         </Step>
 
         <Step index={5} title="Run your first check" state={states[4]}>
-          <p>Start small. Amounts under about 0.1 MUSD tolerate normal BTC price movement on testnet.</p>
+          {PEGPATH_REDEEMER ? (
+            <p>
+              Redemptions go through{" "}
+              <ExternalLink href={explorerAddressUrl(PEGPATH_REDEEMER)}>PegPathRedeemer</ExternalLink>, PegPath&apos;s contract on
+              Mezo Testnet. It works out the redemption hint inside the transaction, so BTC price moves can&apos;t break it. The
+              first time, your wallet asks you to approve exactly the MUSD amount you&apos;re redeeming, then to confirm the
+              redemption.
+            </p>
+          ) : (
+            <p>Start small. Amounts under about 0.1 MUSD tolerate normal BTC price movement on testnet.</p>
+          )}
           <Link href="/redeem" className="inline-flex min-h-11 items-center rounded-xl bg-ink px-5 font-semibold text-fog hover:bg-ink/85">
             Open redemption
           </Link>

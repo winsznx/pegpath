@@ -100,3 +100,24 @@ describe("Mezo testnet (live)", () => {
     expect(receipt.status).toBe("reverted");
   });
 });
+
+describe("PegPathRedeemer on Mezo Testnet (live, 26 Oct 2026)", () => {
+  const REDEEMER = "0x126088EaE43E0c0d4c4AE5D6111d4B0223284164" as Address;
+
+  it.each([
+    ["0x3127f8288a249eb89b7b03b55573128d23469531f7654f38f0b410171cb2c4ed", 5n * 10n ** 16n],
+    ["0x8f2b3d8d97c1ddd7d7b5dc172f7c1abf3d1bec7205edaa49eaee80ea45afbb78", 10n ** 16n],
+  ] as const)("verifies router redemption %s", async (hash, amount) => {
+    const { fetchRedemptionReceipt: fetchWith } = await import("@/lib/redemption/decodeReceipt");
+    const r = await fetchWith(client, hash);
+    console.info(hash, r.status, JSON.stringify(r.redemption, (_, v) => (typeof v === "bigint" ? v.toString() : v)), r.verificationNotes.join(" | "));
+    expect(r.to?.toLowerCase()).toBe(REDEEMER.toLowerCase());
+    expect(r.status).toBe("confirmed-verified");
+    expect(r.redemption?.actualAmount).toBe(amount);
+  });
+
+  it("records the reverted 0.1 MUSD attempt that HintHelpers over-approved", async () => {
+    const r = await fetchRedemptionReceipt(client, "0x87974f4d9a9e3aa9ac38c39cc60483c415881305c1e24208828df0b28ef62aec");
+    expect(r.status).toBe("reverted");
+  });
+});

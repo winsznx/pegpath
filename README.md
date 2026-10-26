@@ -12,7 +12,33 @@ PegPath checks live Mezo MUSD redemption conditions, previews a testnet BTC outc
 | `@mezo-org/musd-contracts` | Mezo's own deployment artifacts. A unit test fails if any address PegPath uses drifts from `deployments/matsnet`. |
 | Mezo Passport (`@mezo-org/passport`) | The wallet layer. Bitcoin wallets (Unisat, OKX, Xverse) sign for a Mezo smart account that holds MUSD and receives BTC; EVM wallets connect directly through the same RainbowKit modal. |
 | Mezo testnet faucet and app | Onboarding (`/start`) checks your real BTC and MUSD balances and links to the faucet and to the testnet app for borrowing MUSD. |
-| PegPathRedeemer (this repo) | An optional on-chain router that computes the partial-redemption hint inside the transaction. See [contracts/](contracts/). |
+| PegPathRedeemer ([`0x1260…4164`](https://explorer.test.mezo.org/address/0x126088EaE43E0c0d4c4AE5D6111d4B0223284164)) | The on-chain router that computes the partial-redemption hint inside the transaction. See [contracts/](contracts/). |
+
+## On-chain evidence (Mezo Testnet, 26 October 2026)
+
+Every row is a real transaction from the deployer `0x06546dA2415b091791e343668C42e07904f33B82`. The receipts are re-derived by PegPath's decoder in `tests/integration/live-testnet.test.ts`.
+
+| # | Action | Tx | Result |
+|---|---|---|---|
+| 1 | Deploy PegPathRedeemer | [`0x16543b08…5d73`](https://explorer.test.mezo.org/tx/0x16543b08d32baad46de6a8933db548a01487eacb5916e818480c58557ae55d73) | Contract `0x126088EaE43E0c0d4c4AE5D6111d4B0223284164` |
+| 2 | Open trove: 0.045 BTC collateral, 1,800 MUSD borrowed | [`0xaa57d0fb…2cd3`](https://explorer.test.mezo.org/tx/0xaa57d0fb991c34f7d3e87bf1cb3277b354c5068c4c752690e58aeb9a48f62cd3) | 1,800 MUSD minted to the deployer |
+| 3 | Approve 0.05 MUSD for the redeemer | [`0x72d0f7c1…5fa1`](https://explorer.test.mezo.org/tx/0x72d0f7c134a8f8a6701dede8611d99f76a55edfc6d8106d46cc7d68cec2b5fa1) | Exact amount, not unlimited |
+| 4 | Redeem 0.05 MUSD through PegPathRedeemer | [`0x3127f828…c4ed`](https://explorer.test.mezo.org/tx/0x3127f8288a249eb89b7b03b55573128d23469531f7654f38f0b410171cb2c4ed) | **confirmed-verified**: 0.05 MUSD burned, 0.000000624025 BTC drawn, 0.000000004680 fee, **0.000000619345 BTC** to the redeemer (min was 0.000000616186) |
+| 5 | Approve 0.1 MUSD | [`0x7e44daf0…024d`](https://explorer.test.mezo.org/tx/0x7e44daf0a2edb26756a9424d91ea210d6bc646fef9447610ea1c0ba5d608024d) | |
+| 6 | Redeem 0.1 MUSD, raw CLI amount, no PegPath planner | [`0x87974f4d…ec62`](https://explorer.test.mezo.org/tx/0x87974f4d9a9e3aa9ac38c39cc60483c415881305c1e24208828df0b28ef62aec) | **Reverted**: `Unable to redeem any amount`. The tail trove had ~0.022 MUSD of headroom above the 1,800 floor, but HintHelpers still reported 0.1 as redeemable (finding 1). Nothing burned; the MUSD stayed in the wallet. |
+| 7 | Redeem 0.01 MUSD through PegPathRedeemer (within the trove's capacity) | [`0x8f2b3d8d…bb78`](https://explorer.test.mezo.org/tx/0x8f2b3d8d97c1ddd7d7b5dc172f7c1abf3d1bec7205edaa49eaee80ea45afbb78) | **confirmed-verified**: 0.01 MUSD burned, **0.000000123708 BTC** to the redeemer |
+
+What row 6 shows: the router removes the price race (finding 2), but it does not fix HintHelpers' overstatement (finding 1). That is what PegPath's planner is for: the app caps the amount to what TroveManager will execute before it builds the call, so this revert only happens when the amount is chosen outside the app.
+
+## PegPathRedeemer on Mezo Testnet
+
+Deployed at [`0x126088EaE43E0c0d4c4AE5D6111d4B0223284164`](https://explorer.test.mezo.org/address/0x126088EaE43E0c0d4c4AE5D6111d4B0223284164) (deploy tx [`0x16543b08…5d73`](https://explorer.test.mezo.org/tx/0x16543b08d32baad46de6a8933db548a01487eacb5916e818480c58557ae55d73)). Production sets `NEXT_PUBLIC_PEGPATH_REDEEMER` to it, so every redemption from the app goes through the router:
+
+1. **Connect** a Bitcoin wallet (Unisat, OKX, Xverse via Mezo Passport) or an EVM wallet. `/start` checks the account's testnet BTC and MUSD and links the faucet and Mezo's testnet app.
+2. **Check** an amount on `/redeem`. PegPath replays TroveManager's walk, reads the fee and simulates.
+3. **Approve** exactly the MUSD amount for the redeemer (first time per amount; never unlimited). The review drawer waits for the approval to confirm, then re-quotes.
+4. **Redeem.** The router computes the first hint and partial NICR in the same transaction at the oracle price TroveManager uses, reverts unless you receive at least `minBtcOut` (quote − 0.5%), returns unredeemed MUSD, and forwards all BTC to you.
+5. **Receipt.** `/receipt/31611/<hash>` decodes TroveManager's `Redemption` event and the router's `Redeemed` event and requires them to agree with the MUSD burn.
 
 ## Screens
 
@@ -128,9 +154,9 @@ Everything below was run against the live Mezo testnet. Nothing here is a fixtur
 | Quote expiry at 30 s / 3 blocks, re-review on changed amount | Verified | unit (mocked clock and blocks) |
 | PegPathRedeemer: atomic hints, min-BTC guard, MUSD refund, deadline, stray-BTC rejection | Verified on a fork | `cd contracts && forge test` (6/6) against a pinned Mezo Testnet fork, oracle precompile stubbed with the live price |
 | Mezo Passport wallet modal, network switch, onboarding balances | Verified | E2E (24/24, desktop and 360px), also against production |
-| PegPathRedeemer deployed to testnet | **Not yet** | Deployer `0x06546dA2415b091791e343668C42e07904f33B82` needs a faucet drip (Turnstile, so a human has to request it) |
-| **A redemption signed and sent through PegPath** | **Not yet verified** | Needs a wallet holding testnet MUSD and BTC. No funded key was available in this environment, and PegPath never takes private keys. |
-| Receipt for a PegPath-sent tx, `CONFIRMED_VERIFIED` end to end | Not yet verified | Depends on the row above. The decoder is verified against other people's real redemptions. |
+| PegPathRedeemer deployed to testnet | Done | [`0x126088EaE43E0c0d4c4AE5D6111d4B0223284164`](https://explorer.test.mezo.org/address/0x126088EaE43E0c0d4c4AE5D6111d4B0223284164), deploy tx `0x16543b08d32baad46de6a8933db548a01487eacb5916e818480c58557ae55d73`; the app routes redemptions through it |
+| Real redemptions through PegPathRedeemer | Done | Two confirmed-verified redemptions and one recorded revert, see "On-chain evidence" |
+| A redemption signed in a browser wallet through the web UI | Not yet recorded | The on-chain rows above were sent from the CLI with the same contract and calldata shape; the UI path is covered by E2E up to the wallet prompt |
 | Screen recording / GIF | Not done | Must be recorded with a real wallet run |
 | Public deployment | Done | https://pegpath.vercel.app, E2E suite passes against it |
 
