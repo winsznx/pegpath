@@ -30,8 +30,9 @@ jobs:
         working-directory: contracts
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - uses: foundry-rs/foundry-toolchain@v1
+      # contracts/lib is not committed; fetch forge-std at the version the tests were written against.
+      - run: forge install foundry-rs/forge-std@v1.17.0 --no-git
       - run: forge build
-      - run: forge test --no-match-path 'test/*.fork.t.sol'
+      # The only tests are fork tests against Mezo Testnet (oracle precompile stubbed); they need
+      # MEZO_PRICE and ~10 minutes of public RPC, so CI builds the contracts and leaves them to local runs.
