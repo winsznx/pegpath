@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+:root {
+  --fog: #eef1f4;
+  --sheet: #f8fafb;
+  --ink: #1a2230;
+  --ink-soft: #4a5566;
+  --ink-faint: #7c8796;
+  --rule: #d6dce3;
+  --musd: #2d6f8f;
+  --musd-wash: #e1edf3;
+  --btc: #a86a14;
+  --btc-wash: #f5ead9;
+  --ok: #2f7d4f;
+  --ok-wash: #e2f0e7;
+  --stop: #b4412f;
+  --stop-wash: #f6e3df;
+  --caution: #8a6200;
+  --caution-wash: #f6edd0;
+  --focus: #2d6f8f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fog: #121924;
+    --sheet: #18212e;
+    --ink: #e6ebf1;
+    --ink-soft: #aab4c1;
+    --ink-faint: #7d8898;
+    --rule: #2a3544;
+    --musd: #6fb3d2;
+    --musd-wash: #1b3140;
+    --btc: #e2a24a;
+    --btc-wash: #3a2c17;
+    --ok: #6cc28f;
+    --ok-wash: #183326;
+    --stop: #ea8a78;
+    --stop-wash: #3b201c;
+    --caution: #e2c15e;
+    --caution-wash: #352c12;
+    --focus: #6fb3d2;
+  }
+}
+
+@theme inline {
+  --color-fog: var(--fog);
+  --color-sheet: var(--sheet);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-rule: var(--rule);
+  --color-musd: var(--musd);
+  --color-musd-wash: var(--musd-wash);
+  --color-btc: var(--btc);
+  --color-btc-wash: var(--btc-wash);
+  --color-ok: var(--ok);
+  --color-ok-wash: var(--ok-wash);
+  --color-stop: var(--stop);
+  --color-stop-wash: var(--stop-wash);
+  --color-caution: var(--caution);
+  --color-caution-wash: var(--caution-wash);
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), var(--font-instrument), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--fog);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  font-feature-settings: "tnum" 1;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--musd-wash);
+}
+
+dialog::backdrop {
+  background: rgb(10 16 24 / 0.45);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .path-draw {
+    animation: path-draw 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .stage-pulse {
+    animation: stage-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes path-draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes stage-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}

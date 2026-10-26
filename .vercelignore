@@ -1,0 +1,7 @@
+internal
+contracts
+tests
+test-results
+playwright-report
+.shots
+.env

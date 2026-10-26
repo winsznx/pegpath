@@ -1,0 +1,3 @@
+# Native/postinstall scripts of transitive wallet deps (bufferutil, utf-8-validate, core-js, es5-ext, ...)
+# are optional speedups or donation banners. None are needed, so they stay disabled.
+strictDepBuilds: false
